@@ -8,7 +8,8 @@ class ApplicationState {
 	constructor () {
 		this.projection_matrix = mat4.create();
 		this.camera_matrix = mat4.create();
-		this.vertex_attributes = {};		
+		this.vertex_attributes = {};
+		this.buffers = {};
 	}
 }
 
@@ -17,62 +18,8 @@ const application_state = new ApplicationState();
 
 
 
-function init_vertex_buffers(happy_mesh, sad_mesh) {
-	const gl = application_state.gl;
-	//We will put the vertices and normals of both buffers in interleaved
-
-	//Prepare buffer
-	application_state.triangle_count = happy_mesh.triangles.length;
-	application_state.vertex_buffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, application_state.vertex_buffer);
-	application_state.vertex_buffer.itemSize = 3;	//x, y, z
-	application_state.vertex_buffer.numItems = application_state.triangle_count*12;	//(3 vertices, 3 normal vertices) times 2
-	
-	var vertices = new Float32Array(application_state.triangle_count * 36);
-
-	function wvx(index, vertex_offset, vertex) {
-		vertices[index*36 + vertex_offset*3 + 0] = vertex.x;
-		vertices[index*36 + vertex_offset*3 + 1] = vertex.y;
-		vertices[index*36 + vertex_offset*3 + 2] = vertex.z;
-	}
-
-	//Fill in buffer - every other normal
-	var tri_h = happy_mesh.triangles;
-	var tri_s = sad_mesh.triangles;
-
-	if (tri_h.length != tri_s.length) {
-		throw new Error("Mesh vertex count mismatch between sad and happy face!");
-	}
-
-	for (const i in tri_h) {
-
-		wvx(i, 0, tri_h[i].a);
-		wvx(i, 1, tri_h[i].normal);
-
-		wvx(i, 2, tri_s[i].a);
-		wvx(i, 3, tri_s[i].normal);
-
-		wvx(i, 4, tri_h[i].b);
-		wvx(i, 5, tri_h[i].normal);
-
-		wvx(i, 6, tri_s[i].b);
-		wvx(i, 7, tri_s[i].normal);
-
-		wvx(i, 8, tri_h[i].c);
-		wvx(i, 9, tri_h[i].normal);
-
-		wvx(i, 10, tri_s[i].c);
-		wvx(i, 11, tri_s[i].normal);
 
 
-
-	}
-
-	//Bind buffer to data
-	gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-
-}
 
 
 function get_gl_context(canvas) {		
@@ -83,6 +30,8 @@ function get_gl_context(canvas) {
 		return gl;
 	}
 }
+
+
 
 
 
@@ -175,5 +124,58 @@ function get_shader(url, shader_type) {
 
 	})
 
+
+}
+
+
+
+function load_vertex_data(url, name) {
+
+	return new Promise((success, failure) => {
+
+		const gl = application_state.gl;
+		const req = new XMLHttpRequest();
+		
+		req.responseType = 'arraybuffer';
+
+		req.addEventListener('load', event => {						
+			const float_array = new Float32Array(event.target.response);
+			application_state.buffers[name] = float_array;
+			
+			success();
+
+		});
+
+		req.open('GET', url, true);
+		req.send();
+
+
+	});
+
+}
+
+
+function load_polygon_data(url, name) {
+
+	return new Promise((success, failure) => {
+
+		const gl = application_state.gl;
+		const req = new XMLHttpRequest();
+		
+		req.responseType = 'arraybuffer';
+
+		req.addEventListener('load', event => {						
+			const int_array = new Uint16Array(event.target.response);
+			application_state.buffers[name] = int_array;
+			
+			success();
+
+		});
+
+		req.open('GET', url, true);
+		req.send();
+
+
+	});
 
 }
