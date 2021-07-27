@@ -56,16 +56,6 @@ function start_experiment() {
 
 		}
 	}
-/*
-	function check_if_meshes_are_loaded() {
-		if (happy_mesh && sad_mesh && application_state.gl) {
-			status.innerText += 'Mesh load complete\nCreating buffers\n';
-			init_vertex_buffers(happy_mesh, sad_mesh);
-			status.innerText += 'Buffers created\n';
-			application_state.meshes_ready = true;
-			check_if_everything_is_ready();
-		}
-	}*/
 
 	function check_if_shaders_are_loaded() {
 		if (application_state.vertex_shader && application_state.fragment_shader) {
@@ -79,19 +69,6 @@ function start_experiment() {
 
 		}
 	}
-
-/*
-	get_stl('happy.stl').then(mesh => {
-		happy_mesh = mesh;
-		status.innerText += 'Happy mesh loaded\n';
-		check_if_meshes_are_loaded();
-	});
-
-	get_stl('sad.stl').then(mesh => {
-		sad_mesh = mesh;
-		status.innerText += 'Sad mesh loaded\n';
-		check_if_meshes_are_loaded();
-	});	*/
 
 
 	load_vertex_data('happy.vertices', 'happy').then(() => {

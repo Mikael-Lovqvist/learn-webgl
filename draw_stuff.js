@@ -1,6 +1,4 @@
 
-
-
 function draw_scene() {
 
 	var gl = application_state.gl;

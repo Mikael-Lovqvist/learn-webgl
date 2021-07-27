@@ -2,8 +2,6 @@
 mat4 = document.glmatrix_exports.mat4;
 
 
-
-
 class ApplicationState {
 	constructor () {
 		this.projection_matrix = mat4.create();
