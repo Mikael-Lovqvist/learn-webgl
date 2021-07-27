@@ -19,45 +19,52 @@ const application_state = new ApplicationState();
 
 function init_vertex_buffers(happy_mesh, sad_mesh) {
 	const gl = application_state.gl;
-	//In this first experiment we will just put the happy_mesh straight in
+	//We will put the vertices and normals of both buffers in interleaved
 
 	//Prepare buffer
 	application_state.triangle_count = happy_mesh.triangles.length;
 	application_state.vertex_buffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, application_state.vertex_buffer);
-	application_state.vertex_buffer.itemSize = 3;	//(a, b, c, normal) × (x, y, z)
-	application_state.vertex_buffer.numItems = application_state.triangle_count*6;	//3 vertices, 3 normal vertices
+	application_state.vertex_buffer.itemSize = 3;	//x, y, z
+	application_state.vertex_buffer.numItems = application_state.triangle_count*12;	//(3 vertices, 3 normal vertices) times 2
 	
-	var vertices = new Float32Array(application_state.triangle_count * 18);
+	var vertices = new Float32Array(application_state.triangle_count * 36);
 
-	//In the very first test we will just skip normals
+	function wvx(index, vertex_offset, vertex) {
+		vertices[index*36 + vertex_offset*3 + 0] = vertex.x;
+		vertices[index*36 + vertex_offset*3 + 1] = vertex.y;
+		vertices[index*36 + vertex_offset*3 + 2] = vertex.z;
+	}
 
 	//Fill in buffer - every other normal
-	var tri = happy_mesh.triangles;
-	for (const i in tri) {
-		vertices[i*18+0] = tri[i].a.x;
-		vertices[i*18+1] = tri[i].a.y;
-		vertices[i*18+2] = tri[i].a.z;
+	var tri_h = happy_mesh.triangles;
+	var tri_s = sad_mesh.triangles;
 
-		vertices[i*18+3] = tri[i].normal.x;
-		vertices[i*18+4] = tri[i].normal.y;
-		vertices[i*18+5] = tri[i].normal.z;
+	if (tri_h.length != tri_s.length) {
+		throw new Error("Mesh vertex count mismatch between sad and happy face!");
+	}
 
-		vertices[i*18+6] = tri[i].b.x;
-		vertices[i*18+7] = tri[i].b.y;
-		vertices[i*18+8] = tri[i].b.z;
+	for (const i in tri_h) {
 
-		vertices[i*18+9] = tri[i].normal.x;
-		vertices[i*18+10] = tri[i].normal.y;
-		vertices[i*18+11] = tri[i].normal.z;
+		wvx(i, 0, tri_h[i].a);
+		wvx(i, 1, tri_h[i].normal);
 
-		vertices[i*18+12] = tri[i].c.x;
-		vertices[i*18+13] = tri[i].c.y;
-		vertices[i*18+14] = tri[i].c.z;
+		wvx(i, 2, tri_s[i].a);
+		wvx(i, 3, tri_s[i].normal);
 
-		vertices[i*18+15] = tri[i].normal.x;
-		vertices[i*18+16] = tri[i].normal.y;
-		vertices[i*18+17] = tri[i].normal.z;
+		wvx(i, 4, tri_h[i].b);
+		wvx(i, 5, tri_h[i].normal);
+
+		wvx(i, 6, tri_s[i].b);
+		wvx(i, 7, tri_s[i].normal);
+
+		wvx(i, 8, tri_h[i].c);
+		wvx(i, 9, tri_h[i].normal);
+
+		wvx(i, 10, tri_s[i].c);
+		wvx(i, 11, tri_s[i].normal);
+
+
 
 	}
 
@@ -92,29 +99,40 @@ function link_shaders() {
 		if (gl.getProgramParameter(shader_program, gl.LINK_STATUS)) {
 			gl.useProgram(shader_program);
 
+			function load_vertex_attribute(name) {
+				const attribute_index = gl.getAttribLocation(shader_program, name);
+
+				if (attribute_index == -1) {
+					throw new Error(`Could not get vertex attribute: ${name}`);
+				}
+
+				vertex_attributes[name] = attribute_index;
+				gl.enableVertexAttribArray(attribute_index);
 
 
-			vertex_attributes.position = gl.getAttribLocation(shader_program, "v_position");
-
-			if (vertex_attributes.position == -1) {
-				throw new Error("Could not get vertex attribute: v_position");
 			}
 
-			gl.enableVertexAttribArray(vertex_attributes.position);
-
-
-
-			vertex_attributes.normal = gl.getAttribLocation(shader_program, "v_normal");
-
-			if (vertex_attributes.normal == -1) {
-				throw new Error("Could not get vertex attribute: v_normal");
+			function load_uniform_attribute(name) {
+				const attribute_index = gl.getUniformLocation(shader_program, name);
+				if (attribute_index == null) {
+					throw new Error(`Could not get uniform attribute: ${name}`);
+				}
+				vertex_attributes[name] = attribute_index;
 			}
 
-			gl.enableVertexAttribArray(vertex_attributes.normal);
+
+			load_vertex_attribute('position_happy');
+			load_vertex_attribute('position_sad');
+			load_vertex_attribute('normal_happy');
+			load_vertex_attribute('normal_sad');
 
 
-			vertex_attributes.projection_matrix = gl.getUniformLocation(shader_program, "uPMatrix");
-			vertex_attributes.camera_matrix = gl.getUniformLocation(shader_program, "uMVMatrix");
+			load_uniform_attribute('projection_matrix');
+			load_uniform_attribute('camera_matrix');
+			load_uniform_attribute('interpolation_value');
+
+			load_uniform_attribute('light_direction');
+
 
 			success(shader_program);
 
